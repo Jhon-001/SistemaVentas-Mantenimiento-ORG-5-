@@ -9,9 +9,9 @@ import util.Validaciones;
 
 public class VentaService {
 
-    private ClienteService clienteService;
-    private ProductoService productoService;
-    private VentaRepository ventaRepo;
+    private final ClienteService clienteService;
+    private final ProductoService productoService;
+    private final VentaRepository ventaRepo;
 
     private Venta ventaActual;
 
@@ -22,7 +22,6 @@ public class VentaService {
     }
 
     public void crearVenta(String dniCliente) {
-
         Cliente cliente = clienteService.buscarCliente(dniCliente);
 
         if (cliente == null) {
@@ -34,19 +33,13 @@ public class VentaService {
         Console.info("Venta creada para: " + cliente.getNombre());
     }
 
-    // BUG intencional: permite cantidad 0 o negativa por Validaciones
-    // Code smell: repetición de mensajes y validaciones
     public void agregarProductoVenta(int idProducto, int cantidad) {
-
-        // --- SOLUCIÓN DEL BUG (Agregado para la Actividad Semana 12) ---
-        if (cantidad <= 0) {
-            System.out.println("ERROR: cantidad inválida");
+        if (!hayVentaActiva()) {
             return;
         }
-        // --------------------------------------------------------------
 
-        if (ventaActual == null) {
-            Console.error("No hay venta activa");
+        if (cantidad <= 0 || !Validaciones.validarCantidad(cantidad)) {
+            Console.error("Cantidad inválida");
             return;
         }
 
@@ -57,19 +50,12 @@ public class VentaService {
             return;
         }
 
-        if (!Validaciones.validarCantidad(cantidad)) {
-            Console.error("Cantidad inválida");
-            return;
-        }
-
         ventaActual.agregarDetalle(producto, cantidad);
         Console.info("Producto agregado: " + producto.getNombre() + " x" + cantidad);
     }
 
     public void finalizarVenta() {
-
-        if (ventaActual == null) {
-            Console.error("No hay venta activa");
+        if (!hayVentaActiva()) {
             return;
         }
 
@@ -78,6 +64,14 @@ public class VentaService {
 
         Console.info("Venta finalizada. Total: " + ventaActual.calcularTotal());
         ventaActual = null;
+    }
+
+    private boolean hayVentaActiva() {
+        if (ventaActual == null) {
+            Console.error("No hay venta activa");
+            return false;
+        }
+        return true;
     }
 
     public Venta obtenerVentaActual() {
